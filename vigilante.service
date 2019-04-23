@@ -1,0 +1,6 @@
+[Unit]
+Description=Test downloads
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/pi/vigilante/vigilante.py
