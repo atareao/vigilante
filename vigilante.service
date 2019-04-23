@@ -1,5 +1,5 @@
 [Unit]
-Description=Test downloads
+Description=Watch your network for you
 
 [Service]
 Type=oneshot
