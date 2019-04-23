@@ -19,7 +19,7 @@ class Vigilante():
             self.read()
         else:
             self.ips = []
-            self.macs = []
+            self.macs = {}
             self.save()
 
     def get_mac_address(self, ip):
@@ -45,8 +45,7 @@ class Vigilante():
         self.token = data['token']
         self.channel_id = data['channel_id']
 
-    def send_warning(self, ip, mac):
-        message = "New device with IP {0} and MAC {1}".format(ip, mac)
+    def send_warning(self, message):
         url = 'https://api.telegram.org/bot{0}/sendMessage'.format(self.token)
         data = {'chat_id': self.channel_id, 'text': message}
         r = requests.post(url, data)
@@ -71,7 +70,7 @@ class Vigilante():
             return ip in self.ips
 
     def add(self, item):
-        if item.find(':') > -1:
+        if type(item) == dict:
             self.macs.append(item)
         else:
             self.ips.append(item)
@@ -98,11 +97,22 @@ class Vigilante():
             if self.data[ip] == 'Unknown':
                 if ip not in self.ips:
                     self.ips.append(ip)
-                    self.send_warning(ip, self.data[ip])
-            elif self.data[ip] not in self.macs:
-                self.macs.append(self.data[ip])
-                self.send_warning(ip, self.data[ip])
-
+                    message = "New device with IP {0} and MAC {1}".format(ip, self.data[ip])
+                    self.send_warning(message)
+            elif self.data[ip] not in self.macs.keys():
+                self.macs[self.data[ip]] = {'last_viewed': time.time(), 'in': True}
+                message = "New device with IP {0} and MAC {1}".format(ip, self.data[ip])
+                self.send_warning(message)
+            elif self.data[ip] in self.macs.keys():
+                if self.macs[self.data[ip]]['in'] is False:
+                    message = "MAC {1} is back".format(self.data[ip])
+                    self.send_warning(message)
+                self.macs[self.data[ip]] = {'last_viewed': time.time(), 'in': True}
+        for mac in self.macs.keys():
+            if self.macs[mac]['last_viewed'] - time.time() > 30 * 60 and self.macs[mac]['in'] is True:
+                self.macs[mac]['in'] = False
+                message = "MAC {1} is gone".format(mac)
+                self.send_warning(message)
 
 if __name__ == '__main__':
     start = time.time()
