@@ -1,6 +1,0 @@
-[Unit]
-Description=Watch your network for you
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/python3 /home/pi/vigilante/vigilante.py
