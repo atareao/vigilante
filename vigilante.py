@@ -13,6 +13,7 @@ class Vigilante():
         self.dir = os.path.dirname(os.path.abspath(__file__))
         self.filename = os.path.join(self.dir, 'vigilante.json')
         self.read_keys()
+        self.read_saved_macs()
         self.local_ip = self.get_local_ip()
         self.manager = Manager()
         if os.path.exists(self.filename):
@@ -44,6 +45,15 @@ class Vigilante():
         data = json.loads(content)
         self.token = data['token']
         self.channel_id = data['channel_id']
+
+    def read_saved_macs(self):
+        filename = os.path.join(self.dir, 'macs.json')
+        if os.path.exists(filename):
+            f = open(filename, 'r')
+            content = f.read()
+            f.close()
+            data = json.loads(content)
+            self.saved_macs = data['macs']
 
     def send_warning(self, message):
         url = 'https://api.telegram.org/bot{0}/sendMessage'.format(self.token)
@@ -97,21 +107,30 @@ class Vigilante():
             if self.data[ip] == 'Unknown':
                 if ip not in self.ips:
                     self.ips.append(ip)
-                    message = "New device with IP {0} and MAC {1}".format(ip, self.data[ip])
+                    message = "Nuevo dispositivo\nIP: {0}\nMAC: Desconocida".format(ip)
                     self.send_warning(message)
             elif self.data[ip] not in self.macs.keys():
                 self.macs[self.data[ip]] = {'last_viewed': time.time(), 'in': True}
-                message = "New device with IP {0} and MAC {1}".format(ip, self.data[ip])
+                if self.data[ip] in self.saved_macs.keys():
+                    message = "Nuevo dispositivo\nIP: {0}\nMAC: {1}\nNombre: {2}".format(ip, self.data[ip],self.saved_macs[self.data[ip]]['name'])
+                else:
+                    message = "Nuevo dispositivo\nIP: {0}\nMAC: {1}".format(ip, self.data[ip])
                 self.send_warning(message)
             elif self.data[ip] in self.macs.keys():
                 if self.macs[self.data[ip]]['in'] is False:
-                    message = "MAC {1} is back".format(self.data[ip])
+                    if self.data[ip] in self.saved_macs.keys():
+                        message = "{0} ha vuelto\nIP: {1}\nMAC: {2}".format(self.saved_macs[self.data[ip]]['name'],ip,self.data[ip])
+                    else:
+                        message = "Un dispositivo ha vuelto\nIP: {0}\nMAC: {1}".format(ip,self.data[ip])
                     self.send_warning(message)
                 self.macs[self.data[ip]] = {'last_viewed': time.time(), 'in': True}
         for mac in self.macs.keys():
-            if self.macs[mac]['last_viewed'] - time.time() > 30 * 60 and self.macs[mac]['in'] is True:
+            if time.time() - self.macs[mac]['last_viewed'] > 5 * 60 and self.macs[mac]['in'] is True:
                 self.macs[mac]['in'] = False
-                message = "MAC {1} is gone".format(mac)
+                if mac in self.saved_macs.keys():
+                    message = "{0} se ha ido".format(self.saved_macs[mac]['name'])
+                else:
+                    message = "MAC {0} se ha ido".format(mac)
                 self.send_warning(message)
 
 if __name__ == '__main__':
