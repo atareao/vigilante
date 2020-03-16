@@ -118,20 +118,16 @@ class Vigilante():
                 self.send_warning(message)
             elif self.data[ip] in self.macs.keys():
                 if self.macs[self.data[ip]]['in'] is False:
-                    if self.data[ip] in self.saved_macs.keys():
-                        message = "{0} ha vuelto\nIP: {1}\nMAC: {2}".format(self.saved_macs[self.data[ip]]['name'],ip,self.data[ip])
-                    else:
+                    if not self.data[ip] in self.saved_macs.keys():
                         message = "Un dispositivo ha vuelto\nIP: {0}\nMAC: {1}".format(ip,self.data[ip])
-                    self.send_warning(message)
-                self.macs[self.data[ip]] = {'last_viewed': time.time(), 'in': True}
+                        self.send_warning(message)
+                    self.macs[self.data[ip]] = {'last_viewed': time.time(), 'in': True}
         for mac in self.macs.keys():
             if time.time() - self.macs[mac]['last_viewed'] > 5 * 60 and self.macs[mac]['in'] is True:
                 self.macs[mac]['in'] = False
-                if mac in self.saved_macs.keys():
-                    message = "{0} se ha ido".format(self.saved_macs[mac]['name'])
-                else:
-                    message = "MAC {0} se ha ido".format(mac)
-                self.send_warning(message)
+                if not mac in self.saved_macs.keys():
+                    message = "Un dispositivo se ha ido\nMAC: {0}".format(mac)
+                    self.send_warning(message)
 
 if __name__ == '__main__':
     start = time.time()
